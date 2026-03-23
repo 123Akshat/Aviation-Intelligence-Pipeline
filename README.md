@@ -1,4 +1,4 @@
-# SkyLens India — Indian Aviation Intelligence Platform
+# Indian Aviation Intelligence Platform
 
 **End-to-end data engineering pipeline on GCP for Indian domestic aviation analytics**
 
@@ -17,7 +17,6 @@ Raw Indian domestic flight data is messy and unqueryable — misspelled cities, 
 3. Orchestrates daily loads via **Apache Airflow** on Cloud Composer
 4. Transforms through a **3-layer dbt model** (staging → intermediate → mart)
 5. Validates with **27 automated data quality tests**
-6. Delivers to **BigQuery** warehouse + **Looker Studio** dashboard
 
 ---
 
@@ -89,12 +88,10 @@ skylens-india/
 | -------------- | ------------------------------------------------------------ |
 | Data lake      | Google Cloud Storage (3-zone: landing/archive/dbt_artifacts) |
 | Streaming      | Google Pub/Sub + Cloud Run subscriber                        |
-| Orchestration  | Apache Airflow on Cloud Composer 2                           |
-| Metadata DB    | PostgreSQL on Cloud SQL (Airflow state store)                |
+| Orchestration  | Apache Airflow on Cloud Composer                             |
+| DB             | PostgreSQL on Cloud SQL (Airflow state store)                |
 | Transformation | dbt Core — staging, intermediate, mart layers                |
 | Warehouse      | BigQuery (date-partitioned, clustered tables)                |
-| BI             | Looker Studio connected to mart tables                       |
-| Alerting       | Slack webhook via Airflow `on_failure_callback`              |
 
 ---
 
@@ -114,46 +111,6 @@ dbt_test
 archive
     ↓
 notify
-```
-
-**Schedule**
-
-```bash
-30 20 * * *
-```
-
-**20:30 UTC = 02:00 IST**
-
-**On failure**
-
-Slack alert with:
-
-* Task name
-* Error message
-* Log URL
-
----
-
-## Quick Start
-
-```bash
-# 1. Provision GCP infrastructure
-bash infra/setup_gcp.sh
-
-# 2. Install dependencies
-pip install -r airflow/requirements.txt
-
-# 3. Upload real dataset to GCS
-python ingestion/upload_csv_to_gcs.py \
-  --file data/flight_date.xlsx
-
-# 4. Run dbt locally (dev)
-cd dbt/skylens
-
-dbt deps
-dbt run --target dev
-dbt test --target dev
-```
 
 ---
 
@@ -167,6 +124,3 @@ dbt test --target dev
 
 ---
 
-## Project Name
-
-# Aviation-Intelligence-Pipeline
