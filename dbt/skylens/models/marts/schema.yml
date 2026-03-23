@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: mart_airline_performance
+    description: >
+      Pre-aggregated airline performance at airline + month + day_name grain.
+      Used for airline comparison in Looker Studio dashboard.
+      Covers: flight volume, avg/min/max price, non-stop %, duration stats.
+    config:
+      materialized: table
+    columns:
+      - name: airline_clean
+        description: "Canonical airline name"
+        tests:
+          - not_null
+      - name: avg_price_inr
+        description: "Average ticket price in INR for this airline+month"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1000
+              max_value: 80000
+      - name: nonstop_pct
+        description: "Percentage of flights that are non-stop"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+      - name: total_flights
+        description: "Total number of flights in this grouping"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 5000
+
+  - name: mart_route_fares
+    description: >
+      Route-level fare analysis at route + airline + month + stop_category grain.
+      Used for fare trend charts and route comparison.
+    config:
+      materialized: table
+    columns:
+      - name: avg_price_inr
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1000
+              max_value: 80000
+
+  - name: mart_price_analysis
+    description: >
+      Price analysis at route + stop_category + departure_slot + price_band grain.
+      Includes nonstop_premium_pct: how much more expensive non-stop is vs 1-stop.
+    config:
+      materialized: table
+    columns:
+      - name: avg_price_inr
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1000
+              max_value: 80000
+      - name: flight_count
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 5000

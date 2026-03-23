@@ -1,0 +1,31 @@
+# Secrets — NEVER commit these
+service_account.json
+*.json.key
+.env
+secrets/
+profiles.yml
+
+# dbt build artifacts
+dbt/skylens/target/
+dbt/skylens/dbt_packages/
+dbt/skylens/logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.python-version
+
+# Airflow local
+airflow/logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

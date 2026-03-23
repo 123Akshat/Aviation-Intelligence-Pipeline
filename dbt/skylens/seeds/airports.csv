@@ -1,0 +1,13 @@
+iata_code,city_name,city_name_clean,airport_name,state,region
+DEL,Delhi,Delhi,Indira Gandhi International,Delhi,North India
+BOM,Mumbai,Mumbai,Chhatrapati Shivaji Maharaj International,Maharashtra,West India
+BLR,Banglore,Bengaluru,Kempegowda International,Karnataka,South India
+CCU,Kolkata,Kolkata,Netaji Subhas Chandra Bose International,West Bengal,East India
+MAA,Chennai,Chennai,Chennai International,Tamil Nadu,South India
+COK,Cochin,Kochi,Cochin International,Kerala,South India
+HYD,Hyderabad,Hyderabad,Rajiv Gandhi International,Telangana,South India
+IXR,Ranchi,Ranchi,Birsa Munda Airport,Jharkhand,East India
+BBI,Bhubaneswar,Bhubaneswar,Biju Patnaik International,Odisha,East India
+NAG,Nagpur,Nagpur,Dr. Babasaheb Ambedkar International,Maharashtra,Central India
+LKO,Lucknow,Lucknow,Chaudhary Charan Singh International,Uttar Pradesh,North India
+VGA,Vijayawada,Vijayawada,Vijayawada Airport,Andhra Pradesh,South India

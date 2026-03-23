@@ -1,0 +1,185 @@
+# models/staging/schema.yml
+# ============================================================
+# dbt Schema + Data Quality Tests — grounded in real data
+# All test values derived from actual flight_date.xlsx analysis:
+#   10,683 rows | 12 airlines | 5 sources | 6 destinations
+#   Price range: ₹1,759 – ₹79,512 | Stops: 0-4
+# ============================================================
+
+version: 2
+
+sources:
+  - name: skylens_raw
+    database: skylens-india
+    schema: skylens_raw
+    description: "Raw Indian domestic flight records loaded from flight_date.xlsx by Airflow"
+    tables:
+      - name: raw_flights
+        description: >
+          10,683 real Indian domestic flight records (March–June 2019).
+          Airlines: IndiGo, Jet Airways, Air India, SpiceJet, Vistara, GoAir, Air Asia.
+          Routes: Delhi, Kolkata, Bengaluru, Mumbai, Chennai → Kochi, Bengaluru, Delhi, Hyderabad.
+        columns:
+          - name: airline
+          - name: journey_date
+            description: "Partition key — journey date as DATE"
+          - name: price
+            description: "Ticket price in INR"
+
+
+models:
+
+  # ── STAGING ──────────────────────────────────────────────────
+  - name: stg_flights
+    description: >
+      Cleaned and typed flight records. 1:1 with source raw_flights.
+      Handles: duration parsing (string → minutes), stop count normalisation,
+      airline name consolidation, city standardisation (Banglore → Bengaluru).
+    config:
+      materialized: incremental
+
+    columns:
+      - name: flight_key
+        description: "Surrogate key: hash(airline, date, source, dest, dep_time)"
+        tests:
+          - unique         # TEST 1 — no duplicate flight records
+          - not_null       # TEST 2 — every row has a key
+
+      - name: airline_clean
+        description: "Canonical airline name (Jet Airways Business → Jet Airways)"
+        tests:
+          - not_null       # TEST 3
+          - accepted_values:  # TEST 4 — only known carriers
+              values:
+                - 'IndiGo'
+                - 'Jet Airways'
+                - 'Air India'
+                - 'SpiceJet'
+                - 'Vistara'
+                - 'GoAir'
+                - 'Air Asia'
+                - 'Multiple Carriers'
+                - 'TruJet'
+
+      - name: airline_category
+        tests:
+          - accepted_values:  # TEST 5
+              values: ['LCC', 'FSC', 'PREMIUM', 'OTHER']
+
+      - name: num_stops
+        description: "Integer stop count: 0=non-stop, 1-4 for stopped flights"
+        tests:
+          - not_null       # TEST 6
+          - dbt_utils.accepted_range:   # TEST 7 — real data has 0-4 stops
+              min_value: 0
+              max_value: 4
+
+      - name: price_inr
+        description: "Ticket price in INR. Real range: ₹1,759–₹79,512"
+        tests:
+          - not_null       # TEST 8
+          - dbt_utils.accepted_range:   # TEST 9 — reject impossible prices
+              min_value: 1000
+              max_value: 100000
+
+      - name: duration_minutes
+        description: "Flight duration in minutes. Real range: 75–1770 (1h15m–29h30m)"
+        tests:
+          - not_null       # TEST 10
+          - dbt_utils.accepted_range:   # TEST 11 — at least 45min, max 36 hours
+              min_value: 45
+              max_value: 2160
+
+      - name: source_iata
+        description: "Origin airport IATA code"
+        tests:
+          - not_null       # TEST 12
+          - accepted_values:  # TEST 13 — real sources in this dataset
+              values: ['DEL', 'CCU', 'BLR', 'BOM', 'MAA']
+
+      - name: destination_iata
+        description: "Destination airport IATA code"
+        tests:
+          - not_null       # TEST 14
+          - accepted_values:  # TEST 15 — real destinations in this dataset
+              values: ['COK', 'BLR', 'DEL', 'HYD', 'CCU', 'MAA']
+
+      - name: journey_date
+        tests:
+          - not_null       # TEST 16
+
+      - name: stop_category
+        tests:
+          - accepted_values:  # TEST 17
+              values: ['Non-stop', '1 Stop', '2 Stops', '3+ Stops']
+
+      - name: dep_hour
+        tests:
+          - dbt_utils.accepted_range:   # TEST 18 — flights run 5am–11pm
+              min_value: 0
+              max_value: 23
+
+  # ── INTERMEDIATE ──────────────────────────────────────────────
+  - name: int_flight_enriched
+    description: >
+      Business logic applied to staging: price bands, time slots,
+      route labels, price-per-hour, weekend flag, layover detection.
+
+    columns:
+      - name: flight_key
+        tests:
+          - unique         # TEST 19
+          - not_null       # TEST 20
+
+      - name: price_band
+        tests:
+          - accepted_values:  # TEST 21
+              values: ['Budget', 'Mid-range', 'Upper-mid', 'Premium', 'Luxury']
+
+      - name: departure_slot
+        tests:
+          - accepted_values:  # TEST 22
+              values: ['Early Morning', 'Morning', 'Afternoon', 'Evening', 'Night']
+
+      - name: price_per_hour_inr
+        tests:
+          - dbt_utils.accepted_range:   # TEST 23
+              min_value: 0
+              max_value: 50000
+
+  # ── MARTS ─────────────────────────────────────────────────────
+  - name: mart_airline_performance
+    description: >
+      Pre-aggregated airline performance metrics at airline + month grain.
+      Covers: flight volume, price stats, non-stop %, duration averages.
+
+    columns:
+      - name: avg_price_inr
+        tests:
+          - dbt_utils.accepted_range:   # TEST 24
+              min_value: 1000
+              max_value: 80000
+
+      - name: nonstop_pct
+        tests:
+          - dbt_utils.accepted_range:   # TEST 25
+              min_value: 0
+              max_value: 100
+
+  - name: mart_price_analysis
+    description: >
+      Price analysis at route + stops + time-of-day grain.
+      Used for: fare heatmaps, non-stop premium, weekend pricing charts.
+
+    columns:
+      - name: avg_price_inr
+        tests:
+          - dbt_utils.accepted_range:   # TEST 26
+              min_value: 1000
+              max_value: 80000
+
+      - name: flight_count
+        tests:
+          - dbt_utils.accepted_range:   # TEST 27
+              min_value: 1
+              max_value: 5000

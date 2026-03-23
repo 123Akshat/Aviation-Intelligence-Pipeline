@@ -1,0 +1,61 @@
+name: 'skylens'
+version: '1.0.0'
+config-version: 2
+
+profile: 'skylens'
+
+model-paths:   ["models"]
+test-paths:    ["tests"]
+seed-paths:    ["seeds"]
+macro-paths:   ["macros"]
+docs-paths:    ["docs"]
+target-path:   "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  skylens:
+    staging:
+      +materialized: incremental
+      +incremental_strategy: merge
+      +schema: staging
+      +tags: ["staging", "daily"]
+      +on_schema_change: "sync_all_columns"
+
+    intermediate:
+      +materialized: incremental
+      +incremental_strategy: merge
+      +schema: intermediate
+      +tags: ["intermediate", "daily"]
+      +on_schema_change: "sync_all_columns"
+
+    marts:
+      +materialized: table
+      +schema: marts
+      +tags: ["mart", "daily"]
+
+seeds:
+  skylens:
+    +schema: seeds
+    airports:
+      +column_types:
+        iata_code: STRING
+        city_name: STRING
+        city_name_clean: STRING
+        airport_name: STRING
+        state: STRING
+        region: STRING
+    airlines:
+      +column_types:
+        airline_code: STRING
+        airline_name: STRING
+        airline_category: STRING
+        country: STRING
+        hub_city: STRING
+        founded_year: INT64
+        status_2019: STRING
+
+vars:
+  execution_date: "{{ run_started_at.strftime('%Y-%m-%d') }}"
+  project_id: "skylens-india"
+  bq_dataset_raw: "skylens_raw"
+  bq_dataset_dbt: "skylens_dbt"

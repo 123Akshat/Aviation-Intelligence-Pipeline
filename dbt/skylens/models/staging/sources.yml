@@ -1,0 +1,65 @@
+version: 2
+
+sources:
+  - name: skylens_raw
+    database: skylens-india
+    schema: skylens_raw
+    description: >
+      Raw Indian domestic flight records loaded from flight_date.xlsx
+      by the Airflow pipeline. 10,683 records covering March-June 2019.
+      Airlines: IndiGo, Jet Airways, Air India, SpiceJet, Vistara, GoAir, Air Asia.
+      Routes: Delhi, Kolkata, Bengaluru, Mumbai, Chennai -> Kochi, Bengaluru, Delhi, Hyderabad.
+
+    tables:
+      - name: raw_flights
+        description: >
+          Raw flight records partitioned by journey_date.
+          Loaded daily by Airflow GCSToBigQueryOperator from GCS landing zone.
+          Known issues handled in stg_flights.sql:
+            - Duration is a mixed string (2h 50m, 19h, 25h 30m)
+            - Arrival_Time contains next-day date in 4335 rows
+            - Source contains Banglore (misspelling)
+            - 2 null rows in Route and Total_Stops
+        columns:
+          - name: airline
+            description: "Raw airline name including variants like Jet Airways Business"
+          - name: date_of_journey_raw
+            description: "Date string in DD/MM/YYYY format - inconsistent zero padding"
+          - name: source_raw
+            description: "Raw source city - includes Banglore misspelling"
+          - name: destination_raw
+            description: "Raw destination city"
+          - name: route
+            description: "IATA route string e.g. BLR -> DEL or CCU -> IXR -> BBI -> BLR. 1 null row"
+          - name: dep_time
+            description: "Departure time as HH:MM string"
+          - name: arrival_time
+            description: "Arrival time - sometimes includes next-day date e.g. 01:10 22 Mar"
+          - name: duration_raw
+            description: "Flight duration as mixed string: 2h 50m or 19h or 21h 5m"
+          - name: total_stops_raw
+            description: "Stop description: non-stop, 1 stop, 2 stops etc. 1 null row"
+          - name: additional_info
+            description: "Extra info: No info, In-flight meal not included, etc"
+          - name: price
+            description: "Ticket price in INR. Range 1759 to 79512"
+          - name: journey_date
+            description: "Parsed journey date as DATE - partition key"
+          - name: source_city
+            description: "Standardised source city (Banglore -> Bengaluru)"
+          - name: destination_city
+            description: "Standardised destination city"
+          - name: source_iata
+            description: "Source airport IATA code"
+          - name: destination_iata
+            description: "Destination airport IATA code"
+          - name: duration_minutes
+            description: "Flight duration in minutes (parsed from duration_raw)"
+          - name: num_stops
+            description: "Number of stops as integer (0=non-stop, 1-4)"
+          - name: airline_category
+            description: "LCC, FSC, PREMIUM, or OTHER"
+          - name: has_next_day_arrival
+            description: "True if Arrival_Time contains a month name"
+          - name: ingested_at
+            description: "UTC timestamp when this record was ingested"

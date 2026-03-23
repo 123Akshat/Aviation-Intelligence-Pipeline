@@ -1,0 +1,39 @@
+version: 2
+
+seeds:
+  - name: airports
+    description: >
+      Reference table for Indian airport IATA codes, city names, and regions.
+      Used to enrich flight records with airport metadata.
+      Covers all airports that appear in the flight_date.xlsx dataset.
+    config:
+      schema: seeds
+    columns:
+      - name: iata_code
+        description: "IATA airport code (3 letters)"
+        tests:
+          - unique
+          - not_null
+      - name: city_name_clean
+        description: "Canonical city name (standardised spelling)"
+        tests:
+          - not_null
+
+  - name: airlines
+    description: >
+      Reference table for Indian airline codes, names, and categories.
+      Covers all 8 airlines that appear in the flight_date.xlsx dataset.
+      Note: Jet Airways was suspended in April 2019 during the data window.
+    config:
+      schema: seeds
+    columns:
+      - name: airline_code
+        description: "IATA airline code"
+        tests:
+          - unique
+          - not_null
+      - name: airline_category
+        description: "LCC (Low Cost Carrier) or FSC (Full Service Carrier)"
+        tests:
+          - accepted_values:
+              values: ['LCC', 'FSC']
